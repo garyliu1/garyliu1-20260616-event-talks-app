@@ -12,6 +12,7 @@ const ICONS = {
     calendar: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`,
     externalLink: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`,
     copy: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`,
+    copyText: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`,
     check: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`,
     twitter: `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`
 };
@@ -21,6 +22,7 @@ const DOM = {
     refreshBtn: document.getElementById('refresh-btn'),
     refreshIcon: document.getElementById('refresh-icon'),
     spinner: document.getElementById('spinner'),
+    exportCsvBtn: document.getElementById('export-csv-btn'),
     cardsContainer: document.getElementById('cards-container'),
     searchInput: document.getElementById('search-input'),
     searchClear: document.getElementById('search-clear'),
@@ -124,6 +126,13 @@ function setupEventListeners() {
     DOM.refreshBtn.addEventListener('click', () => {
         fetchReleaseNotes(true);
     });
+
+    // Export CSV Button Click
+    if (DOM.exportCsvBtn) {
+        DOM.exportCsvBtn.addEventListener('click', () => {
+            exportToCSV();
+        });
+    }
 
     // Search Input
     DOM.searchInput.addEventListener('input', (e) => {
@@ -297,9 +306,9 @@ function setActiveFilterPill(type) {
     });
 }
 
-// Render release note cards based on current filters
-function render() {
-    const filteredReleases = state.releases.filter(item => {
+// Get currently active filtered releases
+function getFilteredReleases() {
+    return state.releases.filter(item => {
         // Filter by Type
         if (state.typeFilter !== 'all' && item.type !== state.typeFilter) {
             return false;
@@ -315,6 +324,11 @@ function render() {
         
         return true;
     });
+}
+
+// Render release note cards based on current filters
+function render() {
+    const filteredReleases = getFilteredReleases();
 
     if (filteredReleases.length === 0) {
         DOM.cardsContainer.innerHTML = '';
@@ -360,6 +374,10 @@ function render() {
                     <button class="btn-card-action" onclick="copyToClipboard('${item.link}', event)">
                         <span class="action-icon">${ICONS.copy}</span>
                         <span>Copy Link</span>
+                    </button>
+                    <button class="btn-card-action" onclick="copyTextToClipboard('${item.id}', event)">
+                        <span class="action-icon">${ICONS.copyText}</span>
+                        <span>Copy Text</span>
                     </button>
                     <a class="btn-card-action" href="${item.link}" target="_blank" onclick="event.stopPropagation()">
                         <span class="action-icon">${ICONS.externalLink}</span>
@@ -546,4 +564,75 @@ function showToast(message, isError = false) {
             DOM.toast.classList.add('hidden');
         }, 300);
     }, 3500);
+}
+
+// Copy plain text content of a note to clipboard
+window.copyTextToClipboard = function(id, event) {
+    event.stopPropagation();
+    const note = state.releases.find(r => r.id === id);
+    if (!note) return;
+
+    const btn = event.currentTarget;
+    const textSpan = btn.querySelector('span:last-child');
+    const iconSpan = btn.querySelector('.action-icon');
+
+    navigator.clipboard.writeText(note.text_summary).then(() => {
+        showToast('Update text copied to clipboard!');
+        
+        const originalText = textSpan.textContent;
+        const originalIcon = iconSpan.innerHTML;
+        
+        textSpan.textContent = 'Copied!';
+        iconSpan.innerHTML = ICONS.check;
+        btn.style.color = 'var(--accent-cyan)';
+        
+        setTimeout(() => {
+            textSpan.textContent = originalText;
+            iconSpan.innerHTML = originalIcon;
+            btn.style.color = '';
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy text: ', err);
+        showToast('Failed to copy text.', true);
+    });
+};
+
+// Export currently filtered releases to CSV
+function exportToCSV() {
+    const filteredReleases = getFilteredReleases();
+    if (filteredReleases.length === 0) {
+        showToast('No releases to export.', true);
+        return;
+    }
+
+    const headers = ['Date', 'Type', 'Link', 'Summary'];
+    const rows = filteredReleases.map(item => [
+        item.date,
+        item.type,
+        item.link,
+        item.text_summary
+    ]);
+
+    // Format row values: escape double quotes, wrap in quotes
+    const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(val => `"${val.replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    // Create a Blob and download it
+    try {
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `bigquery_release_notes_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast('CSV export completed successfully!');
+    } catch (e) {
+        console.error('CSV Export failed:', e);
+        showToast('Failed to export CSV.', true);
+    }
 }
