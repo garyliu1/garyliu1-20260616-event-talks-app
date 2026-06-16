@@ -1165,3 +1165,39 @@ body {
         width: 100%;
     }
 }
+
+/* Character Overflow Warning Panel */
+.char-overflow-warning {
+    color: var(--accent-red);
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(244, 63, 94, 0.08);
+    border: 1px solid rgba(244, 63, 94, 0.2);
+    padding: 8px 12px;
+    border-radius: var(--border-radius-sm);
+    animation: warningSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.char-overflow-warning svg {
+    flex-shrink: 0;
+}
+
+:root[data-theme="light"] .char-overflow-warning {
+    background: rgba(244, 63, 94, 0.05);
+    border-color: rgba(244, 63, 94, 0.15);
+}
+
+@keyframes warningSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

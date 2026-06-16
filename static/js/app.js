@@ -26,6 +26,8 @@ const DOM = {
     themeToggleBtn: document.getElementById('theme-toggle'),
     themeIconSun: document.getElementById('theme-icon-sun'),
     themeIconMoon: document.getElementById('theme-icon-moon'),
+    charOverflowWarning: document.getElementById('char-overflow-warning'),
+    charOverflowCount: document.getElementById('char-overflow-count'),
     cardsContainer: document.getElementById('cards-container'),
     searchInput: document.getElementById('search-input'),
     searchClear: document.getElementById('search-clear'),
@@ -536,6 +538,19 @@ function updateCharacterCount() {
     let progress = Math.min(len / 280, 1.0);
     const offset = CIRCLE_CIRCUMFERENCE - (progress * CIRCLE_CIRCUMFERENCE);
     DOM.charProgressCircle.style.strokeDashoffset = offset;
+    
+    // Handle Character Overflow Warning explanation
+    if (remaining < 0) {
+        const overflow = len - 280;
+        if (DOM.charOverflowWarning) {
+            DOM.charOverflowWarning.classList.remove('hidden');
+            DOM.charOverflowCount.textContent = overflow;
+        }
+    } else {
+        if (DOM.charOverflowWarning) {
+            DOM.charOverflowWarning.classList.add('hidden');
+        }
+    }
     
     // Color states based on limits
     if (remaining < 0) {
