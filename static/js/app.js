@@ -23,6 +23,9 @@ const DOM = {
     refreshIcon: document.getElementById('refresh-icon'),
     spinner: document.getElementById('spinner'),
     exportCsvBtn: document.getElementById('export-csv-btn'),
+    themeToggleBtn: document.getElementById('theme-toggle'),
+    themeIconSun: document.getElementById('theme-icon-sun'),
+    themeIconMoon: document.getElementById('theme-icon-moon'),
     cardsContainer: document.getElementById('cards-container'),
     searchInput: document.getElementById('search-input'),
     searchClear: document.getElementById('search-clear'),
@@ -116,6 +119,7 @@ const TWEET_TEMPLATES = {
 
 // Initialize Application
 document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
     fetchReleaseNotes();
     setupEventListeners();
 });
@@ -211,6 +215,13 @@ function setupEventListeners() {
         window.open(twitterUrl, '_blank');
         showToast('Redirected to X composer.');
     });
+
+    // Theme Toggle Button click
+    if (DOM.themeToggleBtn) {
+        DOM.themeToggleBtn.addEventListener('click', () => {
+            toggleTheme();
+        });
+    }
 }
 
 // Fetch Release Notes
@@ -564,6 +575,34 @@ function showToast(message, isError = false) {
             DOM.toast.classList.add('hidden');
         }, 300);
     }, 3500);
+}
+
+// Initialize theme on startup
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    setTheme(savedTheme);
+}
+
+// Toggle between light and dark themes
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    showToast(`Switched to ${newTheme} mode!`);
+}
+
+// Apply the theme and sync icons
+function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+
+    if (theme === 'light') {
+        if (DOM.themeIconSun) DOM.themeIconSun.classList.add('hidden');
+        if (DOM.themeIconMoon) DOM.themeIconMoon.classList.remove('hidden');
+    } else {
+        if (DOM.themeIconSun) DOM.themeIconSun.classList.remove('hidden');
+        if (DOM.themeIconMoon) DOM.themeIconMoon.classList.add('hidden');
+    }
 }
 
 // Copy plain text content of a note to clipboard
